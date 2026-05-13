@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+output/
+output_video/
+kernel_meta/
+*.json
+images/
