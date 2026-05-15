@@ -676,7 +676,7 @@ class YOLODetectionApp:
         self.engine_status_label.pack(anchor=tk.W)
 
     def _create_video_card(self, parent):
-        card = self._create_card(parent, " Video Source", 270, 130)
+        card = self._create_card(parent, " Video Source", 270, 150)
         content = tk.Frame(card, bg='#2d2d44')
         content.pack(fill=tk.BOTH, padx=10, pady=5)
 
@@ -685,18 +685,21 @@ class YOLODetectionApp:
 
         self.sample_var = tk.StringVar()
         samples = self._get_sample_videos()
+        self.sample_combo = ttk.Combobox(content, textvariable=self.sample_var,
+                                         values=samples, state='readonly', font=('Arial', 8))
         if samples:
-            self.sample_combo = ttk.Combobox(content, textvariable=self.sample_var,
-                                             values=samples, state='readonly', font=('Arial', 8))
-            self.sample_combo.set(samples[0] if samples else "")
-            self.sample_combo.pack(fill=tk.X, pady=5)
+            self.sample_combo.set(samples[0])
+        self.sample_combo.pack(fill=tk.X, pady=5)
 
         btn_frame = tk.Frame(content, bg='#2d2d44')
         btn_frame.pack(fill=tk.X, pady=5)
-        tk.Button(btn_frame, text="Load Sample", command=self._load_sample,
+        tk.Button(btn_frame, text="Load", command=self._load_sample,
                   bg='#0a3d62', fg='white', font=('Arial', 9), relief=tk.FLAT
                   ).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=2)
         tk.Button(btn_frame, text="Open File...", command=self._open_video,
+                  bg='#0a3d62', fg='white', font=('Arial', 9), relief=tk.FLAT
+                  ).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=2)
+        tk.Button(btn_frame, text="Refresh", command=self._refresh_samples,
                   bg='#0a3d62', fg='white', font=('Arial', 9), relief=tk.FLAT
                   ).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=2)
 
@@ -705,7 +708,7 @@ class YOLODetectionApp:
                  font=('Arial', 8), wraplength=300, justify=tk.LEFT).pack(anchor=tk.W)
 
     def _create_settings_card(self, parent):
-        card = self._create_card(parent, " Detection Settings", 405, 100)
+        card = self._create_card(parent, " Detection Settings", 425, 100)
         content = tk.Frame(card, bg='#2d2d44')
         content.pack(fill=tk.BOTH, padx=10, pady=5)
 
@@ -738,7 +741,7 @@ class YOLODetectionApp:
             text=f"{self.iou_var.get():.2f}"))
 
     def _create_playback_card(self, parent):
-        card = self._create_card(parent, " Playback", 510, 80)
+        card = self._create_card(parent, " Playback", 530, 80)
         content = tk.Frame(card, bg='#2d2d44')
         content.pack(fill=tk.BOTH, padx=10, pady=5)
 
@@ -759,7 +762,7 @@ class YOLODetectionApp:
         self.stop_btn.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=2)
 
     def _create_stats_card(self, parent):
-        card = self._create_card(parent, " Performance", 595, 180)
+        card = self._create_card(parent, " Performance", 615, 180)
         content = tk.Frame(card, bg='#2d2d44')
         content.pack(fill=tk.BOTH, padx=10, pady=5)
 
@@ -879,18 +882,32 @@ class YOLODetectionApp:
     def _get_sample_videos(self):
         if not os.path.exists(VIDEO_DIR):
             return []
-        return sorted([os.path.join(VIDEO_DIR, f) for f in os.listdir(VIDEO_DIR)
+        return sorted([f for f in os.listdir(VIDEO_DIR)
                        if f.endswith(('.mp4', '.avi', '.mov', '.mkv'))])
 
+    def _refresh_samples(self):
+        """Refresh the sample video dropdown list."""
+        samples = self._get_sample_videos()
+        self.sample_combo.config(values=samples)
+        if samples and not self.sample_var.get():
+            self.sample_combo.set(samples[0])
+
     def _open_video(self):
-        path = filedialog.askopenfilename(title="Select Video",
-                                          filetypes=[("Videos", "*.mp4 *.avi *.mov *.mkv")])
+        path = filedialog.askopenfilename(
+            title="Select Video",
+            filetypes=[("Videos", "*.mp4 *.avi *.mov *.mkv *.webm"), ("All files", "*.*")],
+            initialdir=VIDEO_DIR)
         if path:
             self._load_video(path)
 
     def _load_sample(self):
         selected = self.sample_var.get()
-        if selected and os.path.exists(selected):
+        if not selected:
+            return
+        full_path = os.path.join(VIDEO_DIR, selected)
+        if os.path.exists(full_path):
+            self._load_video(full_path)
+        elif os.path.exists(selected):
             self._load_video(selected)
 
     def _load_video(self, path):
